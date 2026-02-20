@@ -1,0 +1,15 @@
+torch
+torchvision
+einops
+numpy
+opencv-python
+Pillow
+shapely
+pyclipper
+networkx
+py3langid
+colorama
+tqdm
+requests
+psd-tools>=1.12
+kss>=6.0
