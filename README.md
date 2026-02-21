@@ -176,7 +176,7 @@ python main.py -i 이미지경로.jpg -o 출력폴더/
 PSD 출력 시 자동 생성되는 ExtendScript 파일. Photopea 또는 Photoshop에서 실행하면 편집 가능한 텍스트 레이어 생성.
 
 - 각 텍스트 영역의 위치, 크기, 색상, 폰트 크기를 원본 그대로 반영
-- PARAGRAPHTEXT (영역 텍스트) 방식으로 생성 — 바운딩 박스 내에서 자동 줄바꿈
+- POINTTEXT (포인트 텍스트) 방식으로 생성 — 바운딩 박스 없이 텍스트 전체 표시
 - 실행 시 래스터 텍스트 그룹("Text Layers")을 삭제하고 편집 가능한 그룹("Text Layers (Editable)")으로 대체
 - `--correct-spacing` 사용 시 교정된 텍스트가 적용됨
 

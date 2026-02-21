@@ -28,8 +28,6 @@ def _build_text_layer_jsx(idx: int, region: TextRegionData) -> str:
     escaped = _escape_js_double_quote(text)
     r, g, b = region.fg_color
     fs = max(region.font_size, 10)
-    w = max(region.width, 20)
-    h = max(region.height, 20)
 
     preview = text[:20].replace("\n", " ")
     name = _escape_js_double_quote(f"Text {idx}: {preview}")
@@ -38,22 +36,15 @@ def _build_text_layer_jsx(idx: int, region: TextRegionData) -> str:
     if region.direction == "v":
         direction = "\n  t.direction = Direction.VERTICAL;"
 
-    # Position fallback for POINTTEXT: shift y down by ~80% of font size (baseline)
-    fallback_y = region.y + int(fs * 0.8)
+    # POINTTEXT uses baseline anchor — shift y down by ~80% of font size
+    baseline_y = region.y + int(fs * 0.8)
 
     return f"""(function() {{
   var layer = textGroup.artLayers.add();
   layer.kind = LayerKind.TEXT;
   var t = layer.textItem;{direction}
   t.size = new UnitValue({fs}, "px");
-  try {{
-    t.kind = TextType.PARAGRAPHTEXT;
-    t.position = [new UnitValue({region.x}, "px"), new UnitValue({region.y}, "px")];
-    t.width = new UnitValue({w}, "px");
-    t.height = new UnitValue({h}, "px");
-  }} catch(e) {{
-    t.position = [new UnitValue({region.x}, "px"), new UnitValue({fallback_y}, "px")];
-  }}
+  t.position = [new UnitValue({region.x}, "px"), new UnitValue({baseline_y}, "px")];
   t.contents = "{escaped}";
   try {{ t.font = FONT_NAME; }} catch(e) {{}}
   var c = new SolidColor();
