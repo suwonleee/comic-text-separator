@@ -12,7 +12,7 @@ from shapely.geometry import Polygon
 from .nets.dbnet import DBNetModel
 from .model_manager import WeightManager
 from .types import TextLine
-from .image_utils import det_rearrange_forward, resize_aspect_ratio, scale_coordinates
+from .image_utils import det_rearrange_forward, resize_aspect_ratio
 
 
 _GLOBAL_MODEL = None
@@ -39,17 +39,14 @@ class DBNetPostProcessor:
         self.max_candidates = max_candidates
         self.unclip_ratio = unclip_ratio
 
-    def __call__(self, batch, pred, is_output_polygon=False):
+    def __call__(self, batch, pred):
         pred = pred[:, 0, :, :]
         segmentation = pred > self.thresh
         boxes_batch, scores_batch = [], []
         batch_size = pred.size(0) if isinstance(pred, torch.Tensor) else pred.shape[0]
         for bi in range(batch_size):
             height, width = batch['shape'][bi]
-            if is_output_polygon:
-                boxes, scores = self._polygons_from_bitmap(pred[bi], segmentation[bi], width, height)
-            else:
-                boxes, scores = self._boxes_from_bitmap(pred[bi], segmentation[bi], width, height)
+            boxes, scores = self._polygons_from_bitmap(pred[bi], segmentation[bi], width, height)
             boxes_batch.append(boxes)
             scores_batch.append(scores)
         return boxes_batch, scores_batch
@@ -62,7 +59,7 @@ class DBNetPostProcessor:
         boxes, scores = [], []
         contours, _ = cv2.findContours((bitmap * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours[:self.max_candidates]:
-            epsilon = 0.005 * cv2.arcLength(contour, True)
+            epsilon = 0.002 * cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, epsilon, True)
             points = approx.reshape((-1, 2))
             if points.shape[0] < 4:
@@ -89,44 +86,6 @@ class DBNetPostProcessor:
             scores.append(score)
         return boxes, scores
 
-    def _boxes_from_bitmap(self, pred, _bitmap, dest_width, dest_height):
-        if isinstance(pred, torch.Tensor):
-            bitmap = _bitmap.cpu().numpy()
-            pred = pred.cpu().detach().numpy()
-        else:
-            bitmap = _bitmap
-        height, width = bitmap.shape
-        try:
-            contours, _ = cv2.findContours((bitmap * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        except ValueError:
-            return [], []
-        num_contours = min(len(contours), self.max_candidates)
-        boxes = np.zeros((num_contours, 4, 2), dtype=np.int64)
-        scores = np.zeros((num_contours,), dtype=np.float32)
-        for index in range(num_contours):
-            contour = contours[index].squeeze(1)
-            points, sside = self._get_mini_boxes(contour)
-            if sside < self.min_size:
-                continue
-            points = np.array(points)
-            score = self._box_score_fast(pred, contour)
-            if self.box_thresh > score:
-                continue
-            box = self._unclip(points, unclip_ratio=self.unclip_ratio).reshape(-1, 1, 2)
-            box, sside = self._get_mini_boxes(box)
-            if sside < self.min_size + 2:
-                continue
-            box = np.array(box)
-            if not isinstance(dest_width, int):
-                dest_width = dest_width.item()
-                dest_height = dest_height.item()
-            box[:, 0] = np.clip(np.round(box[:, 0] / width * dest_width), 0, dest_width)
-            box[:, 1] = np.clip(np.round(box[:, 1] / height * dest_height), 0, dest_height)
-            startidx = box.sum(axis=1).argmin()
-            box = np.roll(box, 4 - startidx, 0)
-            boxes[index, :, :] = box.astype(np.int64)
-            scores[index] = score
-        return boxes, scores
 
     @staticmethod
     def _unclip(box, unclip_ratio=1.8):
@@ -241,17 +200,20 @@ class TextDetector(WeightManager):
         det = DBNetPostProcessor(text_threshold, box_threshold, unclip_ratio=unclip_ratio)
         boxes, scores = det({'shape': [(img_resized_h, img_resized_w)]}, db)
         boxes, scores = boxes[0], scores[0]
-
-        if boxes.size == 0:
-            polys = []
-        else:
-            idx = boxes.reshape(boxes.shape[0], -1).sum(axis=1) > 0
-            polys, _ = boxes[idx], scores[idx]
-            polys = polys.astype(np.float64)
-            polys = scale_coordinates(polys, ratio_w, ratio_h, ratio_net=1)
-            polys = polys.astype(np.int64)
-
-        textlines = [TextLine(pts.astype(int), '', score) for pts, score in zip(polys, scores)]
+        # Polygon N-point → 4-point minAreaRect for TextLine compatibility
+        polys = []
+        valid_scores = []
+        for poly_pts, score in zip(boxes, scores):
+            pts = np.array(poly_pts, dtype=np.float64)
+            pts[:, 0] *= ratio_w
+            pts[:, 1] *= ratio_h
+            rect = cv2.minAreaRect(pts.astype(np.float32).reshape(-1, 1, 2))
+            box_4pt = cv2.boxPoints(rect).astype(np.int64)
+            polys.append(box_4pt)
+            valid_scores.append(score)
+        scores = valid_scores
+        textlines = [TextLine(pts.astype(int) if isinstance(pts, np.ndarray) else np.array(pts, dtype=int), '', score)
+                     for pts, score in zip(polys, scores)]
         textlines = list(filter(lambda q: q.area > 16, textlines))
 
         mask_resized = cv2.resize(mask, (mask.shape[1] * 2, mask.shape[0] * 2), interpolation=cv2.INTER_LINEAR)

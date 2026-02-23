@@ -1,188 +1,206 @@
 # comic-text-separator
 
-만화/콘티 이미지에서 텍스트를 자동으로 검출하고, 레이어가 분리된 PSD 파일 또는 JSON 파일로 출력하는 CLI 도구.
+> Korean version: [README_KR.md](README_KR.md)
+
+A CLI tool that automatically detects text in comic/storyboard images and outputs layered PSD files or JSON files.
 
 ---
 
-## 기능
+## Features
 
-- 이미지 내 텍스트 자동 검출 (말풍선, 배경 텍스트 포함)
-- OCR 텍스트 인식
-- 텍스트 제거 (인페인팅) — 원본은 보존하고 텍스트만 제거
-- 한국어 띄어쓰기 자동 교정
-- PSD 출력 시 3단 레이어 구조:
-  - 최하단: 원본 이미지
-  - 중간: 텍스트 제거된 이미지
-  - 최상단: 텍스트 레이어 그룹 (위치 보존)
-- JSON 출력 시 텍스트 좌표, 폰트 크기, 색상, 방향 등 메타데이터 포함
-- JSX 스크립트 자동 생성 — PSD 출력 시 Photopea/Photoshop에서 편집 가능한 텍스트 레이어 생성용 스크립트 동시 출력
+- Automatic text detection in images (speech bubbles and background text)
+- OCR text recognition
+- Text removal (inpainting) — preserves the original and removes only the text
+- Automatic Korean spacing correction
+- 3-layer PSD structure:
+  - Bottom: original image
+  - Middle: inpainted image with text removed
+  - Top: text layer group (positions preserved)
+- JSON output includes metadata: text coordinates, font size, color, orientation, and more
+- Automatic JSX script generation alongside PSD output — runs in Photopea/Photoshop to create editable text layers
 
 ---
 
-## 사전 준비
+## Prerequisites
 
-- **Python 3.10 이상**
+- **Python 3.10 or higher**
 - **Git**
 
-### Python 설치
+### Installing Python
 
-- macOS: https://www.python.org/downloads/macos/ 에서 3.10 이상 버전 다운로드 후 설치
-- Windows: https://www.python.org/downloads/windows/ 에서 3.10 이상 버전 다운로드 후 설치
-  - 설치 시 **"Add Python to PATH" 체크박스를 반드시 체크**
+- macOS: download and install 3.10+ from https://www.python.org/downloads/macos/
+- Windows: download and install 3.10+ from https://www.python.org/downloads/windows/
+  - During installation, **check the "Add Python to PATH" checkbox**
 
-### Git 설치
+### Installing Git
 
-- macOS: 터미널에서 `git --version` 입력 시 자동 설치 안내가 뜸
-- Windows: https://git-scm.com/download/win 에서 다운로드 후 설치 (기본 설정 유지)
+- macOS: run `git --version` in the terminal — it will prompt you to install automatically
+- Windows: download and install from https://git-scm.com/download/win (keep default settings)
 
 ---
 
-## 설치
+## Installation
 
-### 터미널 열기
+### Opening a terminal
 
-- **macOS**: Spotlight(⌘ + Space) → "터미널" 검색 → 실행
-- **Windows**: 시작 메뉴 → "cmd" 검색 → "명령 프롬프트" 실행
+- **macOS**: Spotlight (Cmd + Space) -> search "Terminal" -> open
+- **Windows**: Start menu -> search "cmd" -> open "Command Prompt"
 
-> 이 문서의 모든 명령어는 터미널(또는 명령 프롬프트) 에 직접 입력하는 것.
+> All commands in this document are typed directly into the terminal (or Command Prompt).
 
-### 1단계: 프로젝트 다운로드
+### Step 1: Download the project
 
-원하는 폴더로 이동한 뒤 아래 명령어 입력.
+Navigate to the folder where you want to install it, then run:
 
 ```bash
 git clone https://github.com/suwonleee/comic-text-separator.git
 cd comic-text-separator
 ```
 
-- `git clone` — GitHub에서 프로젝트 전체를 내 컴퓨터로 복사하는 명령
-- `cd` — 해당 폴더로 이동하는 명령
+- `git clone` — copies the entire project from GitHub to your computer
+- `cd` — moves into that folder
 
-### 2단계: 의존성 설치
+### Step 2: Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-- `pip install` — 프로젝트 실행에 필요한 라이브러리를 자동으로 설치하는 명령
-- `requirements.txt` — 필요한 라이브러리 목록 파일
+- `pip install` — automatically installs the libraries the project needs
+- `requirements.txt` — the file listing those libraries
 
-> `pip`이 안 되면 `pip3 install -r requirements.txt`으로 시도.
+> If `pip` doesn't work, try `pip3 install -r requirements.txt`.
 
-> 첫 실행 시 ML 모델 파일 자동 다운로드 (약 500MB). 이후 재실행 시에는 다운로드 없이 즉시 실행.
+> On first run, ML model files are downloaded automatically (~500MB). Subsequent runs load from cache instantly.
 
 ---
 
-## 사용법
+## Usage
 
-### 기본 사용
+### Basic usage
 
-1. `comic-text-separator/input/` 폴더에 변환할 이미지 파일 복사
-2. 터미널에서 아래 명령어 입력:
+1. Copy the image files you want to process into `comic-text-separator/input/`
+2. Run the following command in your terminal:
 
 ```bash
 python main.py
 ```
 
-3. `output/` 폴더에 PSD 파일 + JSX 파일 생성 확인
-4. [Photopea](https://www.photopea.com) 에서 PSD 파일을 열어 편집
+3. Check `output/` for the generated PSD file and JSX file
+4. Open the PSD file in [Photopea](https://www.photopea.com) to edit
 
-- `python main.py` — 프로그램을 실행하는 명령
-- `input/` — 변환할 원본 이미지를 넣는 폴더
-- `output/` — 결과물이 저장되는 폴더
+- `python main.py` — runs the program
+- `input/` — folder where you put the source images
+- `output/` — folder where results are saved
 
-> `python`이 안 되면 `python3 main.py`로 시도.
+> If `python` doesn't work, try `python3 main.py`.
 
-### 편집 가능한 텍스트 레이어 적용 (JSX)
+### Applying editable text layers (JSX)
 
-PSD 출력 시 같은 이름의 `.jsx` 파일이 함께 생성됨. 이 스크립트를 Photopea에서 실행하면 **편집 가능한 텍스트 레이어**가 생성됨.
+When PSD output is generated, a `.jsx` file with the same name is created alongside it. Running this script in Photopea creates **editable text layers**.
 
-1. [Photopea](https://www.photopea.com) 에서 출력된 PSD 파일 열기
-2. 메뉴: **파일 > 스크립트...** 클릭
-3. 스크립트 창의 텍스트 영역에 JSX 파일 내용 전체 복사 후 붙여넣기
-4. **Run** 버튼 클릭
-5. "Text Layers (Editable)" 그룹에 편집 가능한 텍스트 레이어 생성 확인
+1. Open the output PSD file in [Photopea](https://www.photopea.com)
+2. Go to **File > Scripts...** in the menu
+3. Copy the entire contents of the JSX file and paste it into the script window's text area
+4. Click **Run**
+5. Confirm that editable text layers appear in the "Text Layers (Editable)" group
 
-- JSX 파일 내 `FONT_NAME` 변수를 수정하여 원하는 폰트 지정 가능 (기본값: NanumGothic)
-- JSX 실행 시 기존 래스터 텍스트 그룹("Text Layers")은 자동 삭제되고, 편집 가능한 텍스트 그룹으로 대체됨
-- Photoshop에서도 동일하게 사용 가능 (파일 > 스크립트 > 찾아보기 → JSX 파일 선택)
+- Edit the `FONT_NAME` variable inside the JSX file to use a different font (default: NanumGothic). If the specified font is unavailable, the script falls back to Arial automatically.
+- When the script runs, the existing raster text group ("Text Layers") is deleted and replaced with the editable group ("Text Layers (Editable)")
+- The text group is explicitly placed at the top of the layer stack
+- Works the same way in Photoshop (File > Scripts > Browse -> select the JSX file)
 
-### 전체 기능 사용 (텍스트 제거 + 띄어쓰기 교정 + PSD/JSON 동시 출력)
-
-```bash
-python main.py --format both --inpaint --correct-spacing
-```
-
-- `--format both` — PSD와 JSON 동시 출력 옵션
-- `--inpaint` — 텍스트 영역을 배경으로 채워 제거하는 옵션
-- `--correct-spacing` — 한국어 띄어쓰기 자동 교정 옵션
-
-### JSON만 출력
+### Output both PSD and JSON
 
 ```bash
-python main.py --format json --correct-spacing
+python main.py --format both
 ```
 
-### 특정 이미지 또는 폴더 지정
+- `--format both` — outputs PSD and JSON simultaneously
+
+> Running `python main.py` on its own already applies inpainting and spacing correction — both are on by default.
+
+### JSON output only
 
 ```bash
-python main.py -i 이미지경로.jpg -o 출력폴더/
+python main.py --format json
 ```
 
-- `-i` — 입력 경로 지정 (파일 하나 또는 폴더 전체)
-- `-o` — 출력 폴더 지정
+### Specify a particular image or folder
+
+```bash
+python main.py -i image.jpg -o output_folder/
+```
+
+- `-i` — input path (a single file or an entire folder)
+- `-o` — output folder
+
+### Disabling features
+
+```bash
+# Run without inpainting
+python main.py --no-inpaint
+
+# Run without spacing correction
+python main.py --no-correct-spacing
+
+# Disable both
+python main.py --no-inpaint --no-correct-spacing
+```
 
 ---
 
-## 옵션
+## Options
 
-| 옵션 | 기본값 | 설명 |
-|------|--------|------|
-| `-i`, `--input` | `input/` | 입력 이미지 또는 폴더 경로 |
-| `-o`, `--output` | `output/` | 출력 폴더 경로 |
-| `-f`, `--format` | `psd` | 출력 형식 (`psd`, `json`, `both`) |
-| `--inpaint` | 꺼짐 | 텍스트 제거 (인페인팅) 활성화 |
-| `--correct-spacing` | 꺼짐 | 한국어 띄어쓰기 교정 활성화 |
-| `--detection-size` | `2048` | 텍스트 검출 이미지 크기 |
-| `--text-threshold` | `0.5` | 텍스트 검출 임계값 |
-| `--box-threshold` | `0.7` | 바운딩 박스 임계값 |
-| `--inpainting-size` | `2048` | 인페인팅 이미지 크기 |
-| `--use-gpu` | 꺼짐 | GPU 사용 (CUDA 또는 Apple Silicon MPS 자동 감지) |
-| `-v`, `--verbose` | 꺼짐 | 상세 로그 출력 |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-i`, `--input` | `input/` | Input image or folder path |
+| `-o`, `--output` | `output/` | Output folder path |
+| `-f`, `--format` | `psd` | Output format (`psd`, `json`, `both`) |
+| `--inpaint` / `--no-inpaint` | On | Text removal (inpainting). Use `--no-inpaint` to disable. |
+| `--correct-spacing` / `--no-correct-spacing` | On | Korean spacing correction. Use `--no-correct-spacing` to disable. |
+| `--detection-size` | `2048` | Image size for text detection |
+| `--text-threshold` | `0.5` | Text detection threshold |
+| `--box-threshold` | `0.7` | Bounding box threshold |
+| `--inpainting-size` | `2048` | Image size for inpainting |
+| `--use-gpu` | Off | Use GPU (auto-detects CUDA or Apple Silicon MPS) |
+| `-v`, `--verbose` | Off | Verbose log output |
 
 ---
 
-## 출력 파일
+## Output Files
 
-### PSD (Photopea/Photoshop용)
+### PSD (for Photopea/Photoshop)
 
-레이어 구조:
+Layer structure:
 
 ```
-[Text Layers]               ← 텍스트 레이어 그룹 (최상단)
-  ├── Text 1: 대사내용...
-  ├── Text 2: 대사내용...
+[Text Layers]               <- text layer group (top)
+  ├── Text 1: dialogue...
+  ├── Text 2: dialogue...
   └── ...
-[Inpainted (Text Removed)]  ← 텍스트 제거된 이미지 (--inpaint 시)
-[Original Image]             ← 원본 이미지 (최하단)
+[Inpainted (Text Removed)]  <- inpainted image (included by default)
+[Original Image]             <- original image (bottom)
 ```
 
-- 각 텍스트 레이어는 원본 위치에 배치됨
-- `--correct-spacing` 사용 시 교정된 텍스트가 렌더링됨
-- `--inpaint` 미사용 시 중간 레이어(Inpainted) 없이 2단 구조로 출력됨
+- Each text layer is placed at its original position
+- Korean spacing correction is applied by default
+- Using `--no-inpaint` removes the middle layer, resulting in a 2-layer structure
 
-### JSX (편집 가능한 텍스트 레이어용)
+### JSX (for editable text layers)
 
-PSD 출력 시 자동 생성되는 ExtendScript 파일. Photopea 또는 Photoshop에서 실행하면 편집 가능한 텍스트 레이어 생성.
+An ExtendScript file generated automatically alongside PSD output. Running it in Photopea or Photoshop creates editable text layers.
 
-- 각 텍스트 영역의 위치, 크기, 색상, 폰트 크기를 원본 그대로 반영
-- POINTTEXT (포인트 텍스트) 방식으로 생성 — 바운딩 박스 없이 텍스트 전체 표시
-- 실행 시 래스터 텍스트 그룹("Text Layers")을 삭제하고 편집 가능한 그룹("Text Layers (Editable)")으로 대체
-- `--correct-spacing` 사용 시 교정된 텍스트가 적용됨
+- Reflects the original position, size, color, and font size of each text region
+- Uses POINTTEXT mode — displays the full text without a bounding box
+- Deletes the raster text group ("Text Layers") and replaces it with an editable group ("Text Layers (Editable)")
+- Explicitly positions the text group at the top of the layer stack
+- Falls back to Arial if the specified font is unavailable
+- Korean spacing correction is applied by default
 
-### 인페인팅 이미지 (PNG)
+### Inpainted image (PNG)
 
-`--inpaint` 사용 시 텍스트가 제거된 이미지가 `_inpainted.png` 파일로 별도 저장됨. PSD 내 Inpainted 레이어와 동일한 내용이며, 별도 활용 가능.
+By default, the text-removed image is saved separately as `_inpainted.png`. It contains the same content as the Inpainted layer inside the PSD and can be used independently. Using `--no-inpaint` disables this output.
 
 ### JSON
 
@@ -193,8 +211,8 @@ PSD 출력 시 자동 생성되는 ExtendScript 파일. Photopea 또는 Photosho
   "image_height": 20000,
   "regions": [
     {
-      "text": "OCR 원본 텍스트",
-      "text_corrected": "띄어쓰기 교정된 텍스트",
+      "text": "OCR raw text",
+      "text_corrected": "spacing-corrected text",
       "x": 100,
       "y": 200,
       "width": 300,
@@ -209,92 +227,92 @@ PSD 출력 시 자동 생성되는 ExtendScript 파일. Photopea 또는 Photosho
 
 ---
 
-## 프로젝트 구조
+## Project Structure
 
 ```
 comic-text-separator/
-├── main.py                  ← 진입점 (의존성 조립)
+├── main.py                  <- Entry point (dependency assembly)
 ├── domain/
-│   ├── models.py            ← 데이터 모델
-│   └── ports.py             ← 인터페이스 정의
+│   ├── models.py            <- Data models
+│   └── ports.py             <- Interface definitions (Protocols)
 ├── use_cases/
-│   └── extract_text.py      ← 추출 파이프라인
+│   └── extract_text.py      <- Extraction pipeline
 ├── adapters/
-│   ├── detector.py          ← 텍스트 검출
-│   ├── ocr_engine.py        ← OCR
-│   ├── inpainter.py         ← 텍스트 제거
-│   ├── textline_merger.py   ← 텍스트라인 병합
-│   ├── textblock_mapper.py  ← 데이터 변환
-│   └── kss_spacing.py       ← 띄어쓰기 교정
-├── engine/                  ← ML 엔진 (텍스트 검출, OCR, 인페인팅)
-│   ├── detection.py         ← DBNet 텍스트 검출
-│   ├── recognition.py       ← OCR 인식
-│   ├── inpainting.py        ← AOT 인페인팅
-│   ├── merger.py            ← 텍스트라인 병합
-│   ├── model_manager.py     ← 모델 다운로드/로드 관리
-│   ├── types.py             ← TextLine, TextRegion
-│   ├── geometry.py          ← 기하 연산
-│   ├── image_utils.py       ← 이미지 전처리
-│   └── nets/                ← 신경망 모듈
+│   ├── detector.py          <- Text detection
+│   ├── ocr_engine.py        <- OCR
+│   ├── inpainter.py         <- Text removal (inpainting)
+│   ├── textline_merger.py   <- Textline merging
+│   ├── textblock_mapper.py  <- Data conversion
+│   └── kss_spacing.py       <- Korean spacing correction
+├── engine/                  <- ML engine (detection, OCR, inpainting)
+│   ├── detection.py         <- DBNet text detection
+│   ├── recognition.py       <- OCR recognition
+│   ├── inpainting.py        <- AOT inpainting
+│   ├── merger.py            <- Textline merging
+│   ├── model_manager.py     <- Model download/load management
+│   ├── types.py             <- TextLine, TextRegion
+│   ├── geometry.py          <- Geometry operations
+│   ├── image_utils.py       <- Image preprocessing
+│   └── nets/                <- Neural network modules
 ├── infrastructure/
-│   ├── json_exporter.py     ← JSON 출력
-│   ├── jsx_exporter.py      ← JSX 스크립트 출력
-│   └── psd_exporter.py      ← PSD 출력
-├── input/                   ← 입력 이미지 (gitignore)
-├── output/                  ← 출력 결과 (gitignore)
+│   ├── json_exporter.py     <- JSON output
+│   ├── jsx_exporter.py      <- JSX script output
+│   └── psd_exporter.py      <- PSD output
+├── input/                   <- Input images (gitignored)
+├── output/                  <- Output results (gitignored)
 ├── requirements.txt
 └── LICENSE
 ```
 
-### 아키텍처
+### Architecture
 
-Clean Architecture 기반 5계층 구조. 의존성 방향은 안쪽(domain)으로만 향함.
+Clean Architecture with 5 layers. Dependencies point inward (toward domain).
 
 ```
-main.py → adapters / infrastructure → use_cases → domain
-                ↓
-             engine
+main.py -> adapters / infrastructure -> use_cases -> domain
+                 |
+              engine
 ```
 
-- **domain** — 순수 데이터 모델(`TextRegion`, `ExtractionResult`)과 포트(Protocol) 정의. 외부 의존성 없음
-- **use_cases** — 추출 파이프라인 오케스트레이션. 포트 인터페이스에만 의존
-- **adapters** — 포트 구현체. `engine/` 모듈을 래핑하여 domain 모델로 변환
-- **infrastructure** — PSD/JSON/JSX 출력 담당. domain 모델만 참조
-- **engine** — ML 추론 엔진. 나머지 계층과 독립적으로 동작 가능
-- **main.py** — Composition Root. 모든 의존성을 여기서 조립 후 주입 (Constructor Injection)
+- **domain** — Pure data models (`TextRegion`, `ExtractionResult`) and port (Protocol) definitions. No external dependencies.
+- **use_cases** — Extraction pipeline orchestration. Depends only on port interfaces.
+- **adapters** — Port implementations. Wraps `engine/` modules and converts to domain models.
+- **infrastructure** — PSD/JSON/JSX output. References only domain models.
+- **engine** — ML inference engine. Can operate independently of other layers.
+- **main.py** — Composition Root. All dependencies assembled and injected here (Constructor Injection).
 
-포트는 Python `Protocol`(구조적 서브타이핑) 기반. ABC 상속 없이 메서드 시그니처 일치만으로 구현체 인정.
+Ports are based on Python `Protocol` (structural subtyping). No ABC inheritance — matching method signatures is sufficient.
 
-### ML 파이프라인
+### ML Pipeline
 
-이미지 입력 → 결과 출력까지의 처리 흐름:
+Processing flow from image input to result output:
 
-1. **텍스트 검출** — DBNet 기반 세그멘테이션. 이미지에서 텍스트 영역의 사각형 좌표 추출
-2. **텍스트라인 병합** — 인접한 텍스트라인을 방향(가로/세로)과 거리 기준으로 하나의 텍스트 블록으로 병합
-3. **OCR 인식** — 48px AR(Autoregressive) Transformer. 각 텍스트 블록에서 문자열 추출
-4. **인페인팅** (선택) — AOT-GAN 기반. 텍스트 영역을 주변 배경으로 자연스럽게 채움
-5. **띄어쓰기 교정** (선택) — py3langid로 언어 감지 후, 한국어 텍스트에만 kss 라이브러리로 맞춤법 기반 띄어쓰기 적용
+1. **Text Detection** — DBNet-based segmentation. Extracts bounding box coordinates of text regions from the image.
+2. **Textline Merging** — Merges adjacent textlines into text blocks based on direction (horizontal/vertical) and distance.
+3. **OCR Recognition** — 48px AR (Autoregressive) Transformer. Extracts text strings from each text block.
+4. **Inpainting** — AOT-GAN based. Naturally fills text regions with surrounding background. Disable with `--no-inpaint`.
+5. **Spacing Correction** — Detects language via py3langid, applies kss library spacing correction to Korean text only. Disable with `--no-correct-spacing`.
 
-### 모델 관리
+### Model Management
 
-- 첫 실행 시 GitHub Releases에서 자동 다운로드 → `models/` 폴더에 캐시
-- SHA-256 해시 검증으로 파일 무결성 확인
-- 총 용량 약 500MB (검출 294MB, OCR, 인페인팅 모델 포함)
-- 재실행 시 캐시된 모델 즉시 로드
+- Auto-downloaded from GitHub Releases on first run, cached in the `models/` folder
+- SHA-256 hash verification for file integrity
+- Total size ~500MB (detection 294MB, OCR and inpainting models included)
+- Cached models load instantly on subsequent runs
 
-### GPU 지원
+### GPU Support
 
-- `--use-gpu` 옵션으로 활성화
-- NVIDIA GPU — CUDA 자동 감지
-- Apple Silicon (M1/M2/M3) — MPS 백엔드 자동 감지
-- GPU 미감지 시 CPU 자동 폴백
+- Enabled with the `--use-gpu` option
+- NVIDIA GPU — CUDA auto-detection
+- Apple Silicon (M1/M2/M3) — MPS backend auto-detection
+- Falls back to CPU if no GPU is detected
 
 ---
 
-## 감사
+## Acknowledgments
 
-[manga-image-translator](https://github.com/zyddnys/manga-image-translator), [psd-tools](https://github.com/psd-tools/psd-tools)에서 영감을 받았습니다.
+Inspired by [manga-image-translator](https://github.com/zyddnys/manga-image-translator) and [psd-tools](https://github.com/psd-tools/psd-tools).
 
-## 라이선스
+## License
 
-GPL-3.0. 전문은 [LICENSE](LICENSE) 파일 참조.
+GPL-3.0. See [LICENSE](LICENSE) for details.

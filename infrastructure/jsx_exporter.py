@@ -46,7 +46,7 @@ def _build_text_layer_jsx(idx: int, region: TextRegionData) -> str:
   t.size = new UnitValue({fs}, "px");
   t.position = [new UnitValue({region.x}, "px"), new UnitValue({baseline_y}, "px")];
   t.contents = "{escaped}";
-  try {{ t.font = FONT_NAME; }} catch(e) {{}}
+  try {{ t.font = FONT_NAME; }} catch(e) {{ try {{ t.font = "Arial"; }} catch(e2) {{}} }}
   var c = new SolidColor();
   c.rgb.red = {r};
   c.rgb.green = {g};
@@ -95,6 +95,13 @@ for (var i = doc.layerSets.length - 1; i >= 0; i--) {{
 // 편집 가능한 텍스트 레이어 그룹 생성
 var textGroup = doc.layerSets.add();
 textGroup.name = "Text Layers (Editable)";
+textGroup.blendMode = BlendMode.NORMAL;
+textGroup.opacity = 100;
+
+// 텍스트 그룹을 레이어 스택 최상단으로 강제 이동
+if (doc.layers.length > 1) {{
+  textGroup.move(doc.layers[0], ElementPlacement.PLACEBEFORE);
+}}
 """
 
     footer = f'\nalert("{len(blocks)}개 편집 가능한 텍스트 레이어 생성 완료");\n'

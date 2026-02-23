@@ -161,16 +161,16 @@ def main():
         help="Bounding box threshold (default: 0.7)",
     )
     parser.add_argument(
-        "--inpaint", action="store_true",
-        help="Remove detected text from image (adds inpainted layer to PSD)",
+        "--inpaint", action=argparse.BooleanOptionalAction, default=True,
+        help="Remove detected text from image (adds inpainted layer to PSD). Use --no-inpaint to disable.",
     )
     parser.add_argument(
         "--inpainting-size", type=int, default=2048,
         help="Inpainting image size (default: 2048)",
     )
     parser.add_argument(
-        "--correct-spacing", action="store_true",
-        help="Correct Korean word spacing in OCR output (saves to JSON text_corrected field)",
+        "--correct-spacing", action=argparse.BooleanOptionalAction, default=True,
+        help="Correct Korean word spacing in OCR output. Use --no-correct-spacing to disable.",
     )
     parser.add_argument(
         "--use-gpu", action="store_true",

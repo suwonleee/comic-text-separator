@@ -76,14 +76,6 @@ def resize_aspect_ratio(img, square_size, interpolation, mag_ratio=1):
     return resized, ratio, (int(target_w32 / 2), int((target_h + pad_h) / 2)), pad_w, pad_h
 
 
-def scale_coordinates(polys, ratio_w, ratio_h, ratio_net=2):
-    if len(polys) > 0:
-        polys = np.array(polys)
-        for k in range(len(polys)):
-            if polys[k] is not None:
-                polys[k] *= (ratio_w * ratio_net, ratio_h * ratio_net)
-    return polys
-
 
 def square_pad_resize(img: np.ndarray, tgt_size: int):
     h, w = img.shape[:2]
