@@ -1,0 +1,5 @@
+[console_scripts]
+comic-sep = main:main
+
+[gui_scripts]
+comic-sep-gui = gui.app:gui_main

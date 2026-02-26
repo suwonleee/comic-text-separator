@@ -1,0 +1,355 @@
+Metadata-Version: 2.4
+Name: comic-text-separator
+Version: 0.2.0
+Summary: Extract and separate text layers from comic/conti images to PSD or JSON
+Author: suwonleee
+License: GPL-3.0
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Environment :: GPU :: NVIDIA CUDA
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: torch>=2.0.0
+Requires-Dist: torchvision>=0.15.0
+Requires-Dist: einops
+Requires-Dist: numpy
+Requires-Dist: opencv-python>=4.8.0
+Requires-Dist: Pillow>=10.0.0
+Requires-Dist: shapely
+Requires-Dist: pyclipper
+Requires-Dist: networkx
+Requires-Dist: py3langid
+Requires-Dist: colorama
+Requires-Dist: tqdm
+Requires-Dist: requests
+Requires-Dist: psd-tools>=1.12
+Requires-Dist: kss>=6.0
+Requires-Dist: PySide6>=6.6
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Dynamic: license-file
+
+# comic-text-separator
+
+> Korean version: [README_KR.md](README_KR.md)
+
+A CLI tool that automatically detects text in comic/storyboard images and outputs layered PSD files or JSON files.
+
+---
+
+## Features
+
+- Automatic text detection in images (speech bubbles and background text)
+- OCR text recognition
+- Text removal (inpainting) — preserves the original and removes only the text
+- Automatic Korean spacing correction
+- 3-layer PSD structure:
+  - Bottom: original image
+  - Middle: inpainted image with text removed
+  - Top: text layer group (positions preserved)
+- JSON output includes metadata: text coordinates, font size, color, orientation, and more
+- Automatic JSX script generation alongside PSD output — runs in Photopea/Photoshop to create editable text layers
+
+---
+
+## Prerequisites
+
+- **Python 3.10 or higher**
+- **Git**
+
+### Installing Python
+
+- macOS: download and install 3.10+ from https://www.python.org/downloads/macos/
+- Windows: download and install 3.10+ from https://www.python.org/downloads/windows/
+  - During installation, **check the "Add Python to PATH" checkbox**
+
+### Installing Git
+
+- macOS: run `git --version` in the terminal — it will prompt you to install automatically
+- Windows: download and install from https://git-scm.com/download/win (keep default settings)
+
+---
+
+## Installation
+
+### Opening a terminal
+
+- **macOS**: Spotlight (Cmd + Space) -> search "Terminal" -> open
+- **Windows**: Start menu -> search "cmd" -> open "Command Prompt"
+
+> All commands in this document are typed directly into the terminal (or Command Prompt).
+
+### Step 1: Download the project
+
+Navigate to the folder where you want to install it, then run:
+
+```bash
+git clone https://github.com/suwonleee/comic-text-separator.git
+cd comic-text-separator
+```
+
+- `git clone` — copies the entire project from GitHub to your computer
+- `cd` — moves into that folder
+
+### Step 2: Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+- `pip install` — automatically installs the libraries the project needs
+- `requirements.txt` — the file listing those libraries
+
+> If `pip` doesn't work, try `pip3 install -r requirements.txt`.
+
+> On first run, ML model files are downloaded automatically (~500MB). Subsequent runs load from cache instantly.
+
+---
+
+## Usage
+
+### Basic usage
+
+1. Copy the image files you want to process into `comic-text-separator/input/`
+2. Run the following command in your terminal:
+
+```bash
+python main.py
+```
+
+3. Check `output/` for the generated PSD file and JSX file
+4. Open the PSD file in [Photopea](https://www.photopea.com) to edit
+
+- `python main.py` — runs the program
+- `input/` — folder where you put the source images
+- `output/` — folder where results are saved
+
+> If `python` doesn't work, try `python3 main.py`.
+
+### Applying editable text layers (JSX)
+
+When PSD output is generated, a `.jsx` file with the same name is created alongside it. Running this script in Photopea creates **editable text layers**.
+
+1. Open the output PSD file in [Photopea](https://www.photopea.com)
+2. Go to **File > Scripts...** in the menu
+3. Copy the entire contents of the JSX file and paste it into the script window's text area
+4. Click **Run**
+5. Confirm that editable text layers appear in the "Text Layers (Editable)" group
+
+- Edit the `FONT_NAME` variable inside the JSX file to use a different font (default: NanumGothic). If the specified font is unavailable, the script falls back to Arial automatically.
+- When the script runs, the existing raster text group ("Text Layers") is deleted and replaced with the editable group ("Text Layers (Editable)")
+- The text group is explicitly placed at the top of the layer stack
+- Works the same way in Photoshop (File > Scripts > Browse -> select the JSX file)
+
+### Output both PSD and JSON
+
+```bash
+python main.py --format both
+```
+
+- `--format both` — outputs PSD and JSON simultaneously
+
+> Running `python main.py` on its own already applies inpainting and spacing correction — both are on by default.
+
+### JSON output only
+
+```bash
+python main.py --format json
+```
+
+### Specify a particular image or folder
+
+```bash
+python main.py -i image.jpg -o output_folder/
+```
+
+- `-i` — input path (a single file or an entire folder)
+- `-o` — output folder
+
+### Disabling features
+
+```bash
+# Run without inpainting
+python main.py --no-inpaint
+
+# Run without spacing correction
+python main.py --no-correct-spacing
+
+# Disable both
+python main.py --no-inpaint --no-correct-spacing
+```
+
+---
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-i`, `--input` | `input/` | Input image or folder path |
+| `-o`, `--output` | `output/` | Output folder path |
+| `-f`, `--format` | `psd` | Output format (`psd`, `json`, `both`) |
+| `--inpaint` / `--no-inpaint` | On | Text removal (inpainting). Use `--no-inpaint` to disable. |
+| `--correct-spacing` / `--no-correct-spacing` | On | Korean spacing correction. Use `--no-correct-spacing` to disable. |
+| `--detection-size` | `2048` | Image size for text detection |
+| `--text-threshold` | `0.5` | Text detection threshold |
+| `--box-threshold` | `0.7` | Bounding box threshold |
+| `--inpainting-size` | `2048` | Image size for inpainting |
+| `--use-gpu` | Off | Use GPU (auto-detects CUDA or Apple Silicon MPS) |
+| `-v`, `--verbose` | Off | Verbose log output |
+
+---
+
+## Output Files
+
+### PSD (for Photopea/Photoshop)
+
+Layer structure:
+
+```
+[Text Layers]               <- text layer group (top)
+  ├── Text 1: dialogue...
+  ├── Text 2: dialogue...
+  └── ...
+[Inpainted (Text Removed)]  <- inpainted image (included by default)
+[Original Image]             <- original image (bottom)
+```
+
+- Each text layer is placed at its original position
+- Korean spacing correction is applied by default
+- Using `--no-inpaint` removes the middle layer, resulting in a 2-layer structure
+
+### JSX (for editable text layers)
+
+An ExtendScript file generated automatically alongside PSD output. Running it in Photopea or Photoshop creates editable text layers.
+
+- Reflects the original position, size, color, and font size of each text region
+- Uses POINTTEXT mode — displays the full text without a bounding box
+- Deletes the raster text group ("Text Layers") and replaces it with an editable group ("Text Layers (Editable)")
+- Explicitly positions the text group at the top of the layer stack
+- Falls back to Arial if the specified font is unavailable
+- Korean spacing correction is applied by default
+
+### Inpainted image (PNG)
+
+By default, the text-removed image is saved separately as `_inpainted.png`. It contains the same content as the Inpainted layer inside the PSD and can be used independently. Using `--no-inpaint` disables this output.
+
+### JSON
+
+```json
+{
+  "image_path": "/path/to/image.jpg",
+  "image_width": 1280,
+  "image_height": 20000,
+  "regions": [
+    {
+      "text": "OCR raw text",
+      "text_corrected": "spacing-corrected text",
+      "x": 100,
+      "y": 200,
+      "width": 300,
+      "height": 80,
+      "font_size": 40,
+      "fg_color": [0, 0, 0],
+      "direction": "h"
+    }
+  ]
+}
+```
+
+---
+
+## Project Structure
+
+```
+comic-text-separator/
+├── main.py                  <- Entry point (dependency assembly)
+├── domain/
+│   ├── models.py            <- Data models
+│   └── ports.py             <- Interface definitions (Protocols)
+├── use_cases/
+│   └── extract_text.py      <- Extraction pipeline
+├── adapters/
+│   ├── detector.py          <- Text detection
+│   ├── ocr_engine.py        <- OCR
+│   ├── inpainter.py         <- Text removal (inpainting)
+│   ├── textline_merger.py   <- Textline merging
+│   ├── textblock_mapper.py  <- Data conversion
+│   └── kss_spacing.py       <- Korean spacing correction
+├── engine/                  <- ML engine (detection, OCR, inpainting)
+│   ├── detection.py         <- DBNet text detection
+│   ├── recognition.py       <- OCR recognition
+│   ├── inpainting.py        <- AOT inpainting
+│   ├── merger.py            <- Textline merging
+│   ├── model_manager.py     <- Model download/load management
+│   ├── types.py             <- TextLine, TextRegion
+│   ├── geometry.py          <- Geometry operations
+│   ├── image_utils.py       <- Image preprocessing
+│   └── nets/                <- Neural network modules
+├── infrastructure/
+│   ├── json_exporter.py     <- JSON output
+│   ├── jsx_exporter.py      <- JSX script output
+│   └── psd_exporter.py      <- PSD output
+├── input/                   <- Input images (gitignored)
+├── output/                  <- Output results (gitignored)
+├── requirements.txt
+└── LICENSE
+```
+
+### Architecture
+
+Clean Architecture with 5 layers. Dependencies point inward (toward domain).
+
+```
+main.py -> adapters / infrastructure -> use_cases -> domain
+                 |
+              engine
+```
+
+- **domain** — Pure data models (`TextRegion`, `ExtractionResult`) and port (Protocol) definitions. No external dependencies.
+- **use_cases** — Extraction pipeline orchestration. Depends only on port interfaces.
+- **adapters** — Port implementations. Wraps `engine/` modules and converts to domain models.
+- **infrastructure** — PSD/JSON/JSX output. References only domain models.
+- **engine** — ML inference engine. Can operate independently of other layers.
+- **main.py** — Composition Root. All dependencies assembled and injected here (Constructor Injection).
+
+Ports are based on Python `Protocol` (structural subtyping). No ABC inheritance — matching method signatures is sufficient.
+
+### ML Pipeline
+
+Processing flow from image input to result output:
+
+1. **Text Detection** — DBNet-based segmentation. Extracts bounding box coordinates of text regions from the image.
+2. **Textline Merging** — Merges adjacent textlines into text blocks based on direction (horizontal/vertical) and distance.
+3. **OCR Recognition** — 48px AR (Autoregressive) Transformer. Extracts text strings from each text block.
+4. **Inpainting** — AOT-GAN based. Naturally fills text regions with surrounding background. Disable with `--no-inpaint`.
+5. **Spacing Correction** — Detects language via py3langid, applies kss library spacing correction to Korean text only. Disable with `--no-correct-spacing`.
+
+### Model Management
+
+- Auto-downloaded from GitHub Releases on first run, cached in the `models/` folder
+- SHA-256 hash verification for file integrity
+- Total size ~500MB (detection 294MB, OCR and inpainting models included)
+- Cached models load instantly on subsequent runs
+
+### GPU Support
+
+- Enabled with the `--use-gpu` option
+- NVIDIA GPU — CUDA auto-detection
+- Apple Silicon (M1/M2/M3) — MPS backend auto-detection
+- Falls back to CPU if no GPU is detected
+
+---
+
+## Acknowledgments
+
+Inspired by [manga-image-translator](https://github.com/zyddnys/manga-image-translator) and [psd-tools](https://github.com/psd-tools/psd-tools).
+
+## License
+
+GPL-3.0. See [LICENSE](LICENSE) for details.

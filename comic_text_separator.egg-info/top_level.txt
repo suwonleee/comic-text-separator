@@ -1,0 +1,7 @@
+adapters
+domain
+engine
+gui
+infrastructure
+main
+use_cases

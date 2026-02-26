@@ -1,9 +1,9 @@
-torch
-torchvision
+torch>=2.0.0
+torchvision>=0.15.0
 einops
 numpy
-opencv-python
-Pillow
+opencv-python>=4.8.0
+Pillow>=10.0.0
 shapely
 pyclipper
 networkx
@@ -14,3 +14,7 @@ requests
 psd-tools>=1.12
 kss>=6.0
 PySide6>=6.6
+
+[dev]
+pytest>=7.0
+ruff>=0.1.0
