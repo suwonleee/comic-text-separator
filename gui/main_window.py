@@ -11,7 +11,7 @@ from PySide6.QtCore import (
     QEasingCurve,
     Qt,
 )
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QFont, QPainter
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
 )
 
 from gui.worker import PipelineController, detect_device
+from gui.styles import apply_shadow
 
 SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'}
 IMAGE_FILTER = "이미지 파일 (*.jpg *.jpeg *.png *.webp *.bmp *.tiff);;모든 파일 (*)"
@@ -54,7 +55,7 @@ class CollapsibleSection(QWidget):
         super().__init__(parent)
 
         self._toggle_button = QToolButton()
-        self._toggle_button.setStyleSheet("QToolButton { border: none; }")
+        self._toggle_button.setObjectName("collapsible_toggle")
         self._toggle_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self._toggle_button.setText(title)
         self._toggle_button.setArrowType(Qt.ArrowType.RightArrow)
@@ -116,7 +117,12 @@ class ImageDropList(QListWidget):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
             self._overlay_visible = True
-            self.setStyleSheet("QListWidget { border: 2px dashed #4a90d9; }")
+            self.setStyleSheet(
+                "QListWidget#image_list {"
+                "  border: 3px dashed #0d0d0d;"
+                "  background-color: #f0f0f0;"
+                "}"
+            )
         else:
             event.ignore()
 
@@ -129,17 +135,28 @@ class ImageDropList(QListWidget):
         self.setStyleSheet("")
         urls = event.mimeData().urls()
         paths = []
+        rejected = []
         for url in urls:
             path = url.toLocalFile()
             ext = os.path.splitext(path)[1].lower()
             if ext in SUPPORTED_EXTENSIONS:
                 paths.append(path)
+            elif ext:
+                rejected.append(os.path.basename(path))
         if paths:
-            # Emit nothing — parent window connects via method call
             self._add_paths(paths)
             event.acceptProposedAction()
         else:
             event.ignore()
+        if rejected:
+            supported = ', '.join(sorted(SUPPORTED_EXTENSIONS))
+            QMessageBox.warning(
+                self.window(),
+                "지원하지 않는 파일 형식",
+                f"다음 파일은 지원하지 않는 형식입니다:\n"
+                f"{', '.join(rejected)}\n\n"
+                f"지원 형식: {supported}",
+            )
 
     def _add_paths(self, paths: list[str]) -> None:
         """Add file paths, avoiding duplicates."""
@@ -159,9 +176,12 @@ class ImageDropList(QListWidget):
     def paintEvent(self, event) -> None:
         super().paintEvent(event)
         if self.count() == 0 and not self._overlay_visible:
-            from PySide6.QtGui import QPainter
             painter = QPainter(self.viewport())
-            painter.setPen(Qt.GlobalColor.gray)
+            painter.setPen(QColor("#888888"))
+            font = painter.font()
+            font.setBold(True)
+            font.setPointSize(13)
+            painter.setFont(font)
             painter.drawText(self.viewport().rect(), Qt.AlignmentFlag.AlignCenter,
                              "이미지를 드래그하여 추가하세요")
             painter.end()
@@ -178,12 +198,13 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("comic-text-separator")
         self.setMinimumSize(500, 600)
-        self.resize(600, 750)
+        self.resize(620, 780)
 
         self._controller = PipelineController(self)
         self._output_dir = os.path.abspath("output")
 
         self._init_ui()
+        self._apply_shadows()
         self._set_idle_state()
 
     # -----------------------------------------------------------------------
@@ -194,16 +215,13 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
-        root.setContentsMargins(10, 10, 10, 10)
-        root.setSpacing(10)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(14)
 
         # -- Header --
         header = QHBoxLayout()
         title_label = QLabel("comic-text-separator")
-        title_font = title_label.font()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
+        title_label.setObjectName("title_label")
         header.addWidget(title_label)
 
         header.addStretch()
@@ -211,25 +229,32 @@ class MainWindow(QMainWindow):
         device_id, device_name = detect_device()
         self._device_id = device_id
         self._device_badge = QLabel(f"🖥 {device_name}")
-        self._device_badge.setStyleSheet(
-            "QLabel { background-color: #e8f4e8; padding: 4px 8px; border-radius: 4px; }"
-        )
+        self._device_badge.setObjectName("device_badge")
         header.addWidget(self._device_badge)
         root.addLayout(header)
+
+        # -- Header separator --
+        header_line = QFrame()
+        header_line.setObjectName("header_line")
+        header_line.setFrameShape(QFrame.Shape.HLine)
+        root.addWidget(header_line)
 
         # -- Image list area --
         btn_row = QHBoxLayout()
         self._btn_add = QPushButton("이미지 추가")
+        self._btn_add.setObjectName("btn_add")
         self._btn_add.clicked.connect(self._on_add_images)
         btn_row.addWidget(self._btn_add)
 
         self._btn_remove = QPushButton("선택 삭제")
+        self._btn_remove.setObjectName("btn_remove")
         self._btn_remove.clicked.connect(self._on_remove_selected)
         btn_row.addWidget(self._btn_remove)
         btn_row.addStretch()
         root.addLayout(btn_row)
 
         self._image_list = ImageDropList()
+        self._image_list.setObjectName("image_list")
         self._image_list.setMinimumHeight(150)
         root.addWidget(self._image_list, stretch=1)
 
@@ -258,10 +283,12 @@ class MainWindow(QMainWindow):
         out_layout.addWidget(out_label)
 
         self._output_edit = QLineEdit(self._output_dir)
+        self._output_edit.setObjectName("output_edit")
         self._output_edit.setReadOnly(True)
         out_layout.addWidget(self._output_edit, stretch=1)
 
         self._btn_output = QPushButton("변경")
+        self._btn_output.setObjectName("btn_output")
         self._btn_output.clicked.connect(self._on_change_output)
         out_layout.addWidget(self._btn_output)
         root.addLayout(out_layout)
@@ -269,7 +296,7 @@ class MainWindow(QMainWindow):
         # -- Advanced options (collapsible) --
         self._advanced = CollapsibleSection("고급 옵션")
         adv_layout = QVBoxLayout()
-        adv_layout.setContentsMargins(10, 6, 10, 6)
+        adv_layout.setContentsMargins(12, 10, 12, 10)
         adv_layout.setSpacing(8)
 
         # Detection size
@@ -329,9 +356,11 @@ class MainWindow(QMainWindow):
 
         # -- Progress area --
         self._status_label = QLabel("")
+        self._status_label.setObjectName("status_label")
         root.addWidget(self._status_label)
 
         self._progress_bar = QProgressBar()
+        self._progress_bar.setObjectName("progress_bar")
         self._progress_bar.setValue(0)
         self._progress_bar.setTextVisible(True)
         root.addWidget(self._progress_bar)
@@ -339,21 +368,30 @@ class MainWindow(QMainWindow):
         # -- Action buttons --
         btn_layout = QHBoxLayout()
         self._btn_start = QPushButton("처리 시작")
-        self._btn_start.setMinimumHeight(40)
-        start_font = self._btn_start.font()
-        start_font.setPointSize(14)
-        start_font.setBold(True)
-        self._btn_start.setFont(start_font)
+        self._btn_start.setObjectName("btn_start")
         self._btn_start.clicked.connect(self._on_start)
         btn_layout.addWidget(self._btn_start)
 
         self._btn_open_output = QPushButton("출력 폴더 열기")
-        self._btn_open_output.setMinimumHeight(40)
+        self._btn_open_output.setObjectName("btn_open_output")
         self._btn_open_output.clicked.connect(self._on_open_output)
         self._btn_open_output.setVisible(False)
         btn_layout.addWidget(self._btn_open_output)
 
         root.addLayout(btn_layout)
+
+    # -----------------------------------------------------------------------
+    # Neo-brutalism shadow effects
+    # -----------------------------------------------------------------------
+
+    def _apply_shadows(self) -> None:
+        """Apply solid drop-shadow effects to key interactive widgets."""
+        apply_shadow(self._btn_start, 2, 2)
+        apply_shadow(self._btn_add, 2, 2)
+        apply_shadow(self._btn_remove, 2, 2)
+        apply_shadow(self._image_list, 2, 2)
+        apply_shadow(self._btn_open_output, 2, 2)
+        apply_shadow(self._progress_bar, 2, 2)
 
     # -----------------------------------------------------------------------
     # Config assembly
@@ -428,7 +466,25 @@ class MainWindow(QMainWindow):
     def _on_add_images(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(self, "이미지 선택", "", IMAGE_FILTER)
         if paths:
-            self._image_list._add_paths(paths)
+            valid = []
+            rejected = []
+            for p in paths:
+                ext = os.path.splitext(p)[1].lower()
+                if ext in SUPPORTED_EXTENSIONS:
+                    valid.append(p)
+                else:
+                    rejected.append(os.path.basename(p))
+            if valid:
+                self._image_list._add_paths(valid)
+            if rejected:
+                supported = ', '.join(sorted(SUPPORTED_EXTENSIONS))
+                QMessageBox.warning(
+                    self,
+                    "지원하지 않는 파일 형식",
+                    f"다음 파일은 지원하지 않는 형식입니다:\n"
+                    f"{', '.join(rejected)}\n\n"
+                    f"지원 형식: {supported}",
+                )
 
     def _on_remove_selected(self) -> None:
         for item in reversed(self._image_list.selectedItems()):
